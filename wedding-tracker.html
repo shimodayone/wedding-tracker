@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wedding Body Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf6f1;
+  --blush: #e8c5b0;
+  --rose: #c4826a;
+  --deep: #3a2a24;
+  --gold: #b89a6a;
+  --sage: #8a9e8c;
+  --light-sage: #e2ede3;
+  --dark-rose: #9a5e48;
+  --white: #ffffff;
+  --card: #ffffff;
+  --muted: #9a8070;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--cream); color:var(--deep); font-family:'Noto Sans JP',sans-serif; font-weight:300; min-height:100vh; }
+
+/* NAV */
+.nav { background:var(--deep); padding:0; display:flex; overflow-x:auto; scrollbar-width:none; position:sticky; top:0; z-index:100; }
+.nav::-webkit-scrollbar { display:none; }
+.nav-btn { flex-shrink:0; padding:14px 20px; color:rgba(250,246,241,0.6); font-size:12px; letter-spacing:2px; cursor:pointer; border:none; background:none; font-family:'Noto Sans JP',sans-serif; transition:all 0.2s; white-space:nowrap; }
+.nav-btn.active { color:var(--blush); border-bottom:2px solid var(--blush); }
+.nav-btn:hover { color:var(--cream); }
+
+/* PAGES */
+.page { display:none; padding:24px 16px; max-width:860px; margin:0 auto; }
+.page.active { display:block; }
+
+/* HERO / COUNTDOWN */
+.hero-section { background:linear-gradient(135deg, var(--deep) 0%, #5a3a30 70%, var(--rose) 100%); border-radius:20px; padding:28px 24px; color:var(--cream); margin-bottom:20px; position:relative; overflow:hidden; }
+.hero-section::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:rgba(184,154,106,0.12); }
+.hero-date { font-size:11px; letter-spacing:3px; color:var(--blush); margin-bottom:6px; }
+.hero-title { font-family:'Cormorant Garamond',serif; font-size:clamp(22px,5vw,34px); font-weight:300; margin-bottom:20px; line-height:1.3; }
+.hero-title em { font-style:italic; color:var(--blush); }
+.countdown-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.cd-card { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:14px 16px; text-align:center; }
+.cd-days { font-family:'Cormorant Garamond',serif; font-size:38px; color:var(--blush); line-height:1; }
+.cd-label { font-size:10px; letter-spacing:2px; opacity:0.75; margin-top:4px; }
+.cd-date { font-size:11px; color:var(--gold); margin-top:2px; }
+
+/* PHASE BADGE */
+.phase-chip { display:inline-flex; align-items:center; gap:6px; background:var(--rose); color:white; font-size:10px; letter-spacing:2px; padding:5px 14px; border-radius:20px; margin-bottom:16px; font-weight:500; }
+
+/* TODAY CARD */
+.today-card { background:var(--card); border-radius:18px; box-shadow:0 4px 20px rgba(58,42,36,0.08); margin-bottom:16px; overflow:hidden; }
+.today-header { padding:20px 20px 16px; border-bottom:1px solid #f0e8e0; }
+.today-day { font-size:11px; letter-spacing:3px; color:var(--gold); margin-bottom:4px; font-weight:500; }
+.today-theme { font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--rose); margin-bottom:4px; }
+.today-sub { font-size:12px; color:var(--muted); }
+.today-body { padding:20px; }
+
+/* EXERCISE ROW */
+.ex-section-title { font-size:10px; letter-spacing:3px; color:var(--sage); font-weight:500; margin:16px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--light-sage); }
+.ex-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; background:var(--cream); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+.ex-name { font-weight:500; font-size:13px; margin-bottom:2px; }
+.ex-target { font-size:11px; color:var(--rose); }
+.ex-weight { font-size:11px; color:var(--sage); margin-top:1px; }
+.ex-sets { font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--gold); text-align:right; white-space:nowrap; }
+.ex-sets small { font-size:10px; font-family:'Noto Sans JP',sans-serif; color:var(--muted); }
+
+/* CHECK BUTTON */
+.check-btn { width:100%; margin-top:20px; padding:16px; border-radius:14px; border:2px solid var(--rose); background:transparent; color:var(--rose); font-family:'Noto Sans JP',sans-serif; font-size:14px; font-weight:500; letter-spacing:2px; cursor:pointer; transition:all 0.25s; }
+.check-btn.done { background:var(--rose); color:white; }
+.check-btn:hover { background:var(--rose); color:white; }
+
+/* SAUNA CARD */
+.sauna-card { background:linear-gradient(135deg,#e8f0e9,#d4e0d5); border-radius:16px; padding:18px 20px; margin-bottom:16px; }
+.sauna-title { font-family:'Cormorant Garamond',serif; font-size:20px; color:#5a7a5c; margin-bottom:12px; }
+.sauna-steps { display:flex; gap:10px; flex-wrap:wrap; }
+.sauna-step { background:white; border-radius:10px; padding:10px 14px; font-size:12px; text-align:center; flex:1; min-width:80px; }
+.sauna-step .icon { font-size:18px; margin-bottom:4px; }
+.sauna-step .label { font-weight:500; font-size:11px; color:var(--deep); }
+.sauna-step .desc { font-size:10px; color:#7a8a7c; margin-top:2px; }
+
+/* FOOD CARD */
+.food-card { background:var(--card); border-radius:16px; box-shadow:0 2px 12px rgba(58,42,36,0.07); padding:20px; margin-bottom:16px; }
+.food-title { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--rose); margin-bottom:14px; }
+.meal-row { display:flex; gap:12px; margin-bottom:10px; align-items:flex-start; }
+.meal-time-badge { flex-shrink:0; background:var(--cream); border-radius:8px; padding:4px 10px; font-size:10px; letter-spacing:1px; color:var(--gold); font-weight:500; margin-top:2px; white-space:nowrap; }
+.meal-content { font-size:13px; color:#5a4038; line-height:1.7; }
+
+/* REST DAY */
+.rest-card { background:var(--light-sage); border-radius:18px; padding:28px; text-align:center; }
+.rest-icon { font-size:40px; margin-bottom:12px; }
+.rest-title { font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--sage); margin-bottom:8px; }
+.rest-desc { font-size:13px; color:#6a7a6c; line-height:1.8; }
+
+/* CALENDAR / TRACKER */
+.month-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.month-title { font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--deep); }
+.month-arrow { background:none; border:1px solid var(--blush); border-radius:8px; padding:6px 14px; cursor:pointer; color:var(--rose); font-size:16px; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:24px; }
+.cal-head { text-align:center; font-size:10px; letter-spacing:2px; color:var(--muted); padding:6px 0; font-weight:500; }
+.cal-cell { aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:12px; cursor:pointer; transition:all 0.15s; border:1px solid transparent; position:relative; }
+.cal-cell.other-month { opacity:0.25; }
+.cal-cell.today-cell { border-color:var(--rose); font-weight:700; color:var(--rose); }
+.cal-cell.done-cell { background:var(--rose); color:white; }
+.cal-cell.rest-cell { background:var(--light-sage); color:var(--sage); }
+.cal-cell:hover:not(.other-month) { background:var(--cream); border-color:var(--blush); }
+.cal-cell .cal-dot { width:5px; height:5px; border-radius:50%; background:var(--blush); position:absolute; bottom:4px; }
+
+/* STATS */
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:var(--card); border-radius:14px; padding:16px; text-align:center; box-shadow:0 2px 10px rgba(58,42,36,0.07); }
+.stat-num { font-family:'Cormorant Garamond',serif; font-size:36px; color:var(--rose); line-height:1; }
+.stat-label { font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:4px; }
+
+/* EVENTS PAGE */
+.events-list { display:flex; flex-direction:column; gap:12px; margin-bottom:24px; }
+.event-item { background:var(--card); border-radius:14px; padding:16px 18px; box-shadow:0 2px 10px rgba(58,42,36,0.07); display:flex; align-items:center; gap:14px; }
+.event-dot { width:10px; height:10px; border-radius:50%; background:var(--rose); flex-shrink:0; }
+.event-dot.wedding { background:var(--gold); }
+.event-info { flex:1; }
+.event-name { font-weight:500; font-size:14px; margin-bottom:2px; }
+.event-date { font-size:12px; color:var(--muted); }
+.event-countdown { font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--rose); text-align:right; white-space:nowrap; }
+.event-countdown small { font-size:11px; font-family:'Noto Sans JP',sans-serif; color:var(--muted); display:block; }
+.event-delete { background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:0 4px; }
+.event-delete:hover { color:var(--rose); }
+
+.add-event-form { background:var(--card); border-radius:16px; padding:20px; box-shadow:0 2px 12px rgba(58,42,36,0.08); }
+.add-event-title { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--rose); margin-bottom:16px; }
+.form-row { margin-bottom:12px; }
+.form-label { font-size:11px; letter-spacing:2px; color:var(--muted); font-weight:500; margin-bottom:6px; display:block; }
+.form-input { width:100%; padding:10px 14px; border:1px solid #e8d8cc; border-radius:10px; font-family:'Noto Sans JP',sans-serif; font-size:14px; color:var(--deep); background:var(--cream); outline:none; }
+.form-input:focus { border-color:var(--rose); }
+.add-btn { width:100%; padding:14px; border-radius:12px; border:none; background:var(--rose); color:white; font-family:'Noto Sans JP',sans-serif; font-size:14px; font-weight:500; letter-spacing:2px; cursor:pointer; }
+.add-btn:hover { background:var(--dark-rose); }
+
+/* PROGRESS BAR */
+.progress-wrap { background:#f0e8e0; border-radius:8px; height:8px; margin-top:6px; }
+.progress-fill { height:8px; border-radius:8px; background:linear-gradient(90deg,var(--rose),var(--gold)); transition:width 0.5s; }
+
+/* SECTION CARD */
+.section-card { background:var(--card); border-radius:16px; box-shadow:0 2px 12px rgba(58,42,36,0.07); padding:20px; margin-bottom:16px; }
+.section-card-title { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--rose); margin-bottom:14px; }
+
+/* UTIL */
+.tag { display:inline-block; background:var(--light-sage); color:var(--sage); font-size:10px; letter-spacing:1px; padding:3px 10px; border-radius:20px; font-weight:500; }
+.tag.rose { background:#fce8e0; color:var(--rose); }
+
+@media(max-width:480px) {
+  .countdown-row { grid-template-columns:1fr 1fr; }
+  .stats-row { grid-template-columns:repeat(3,1fr); gap:8px; }
+  .stat-num { font-size:28px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('today')">TODAY</button>
+  <button class="nav-btn" onclick="showPage('tracker')">記録</button>
+  <button class="nav-btn" onclick="showPage('events')">予定</button>
+  <button class="nav-btn" onclick="showPage('menu')">メニュー全体</button>
+</nav>
+
+<div id="page-today" class="page active"></div>
+<div id="page-tracker" class="page"></div>
+<div id="page-events" class="page"></div>
+<div id="page-menu" class="page"></div>
+
+<script>
+// ===================== DATA =====================
+const DRESS_DATE = new Date('2026-07-19');
+const WEDDING_DATE = new Date('2027-01-24');
+const START_DATE = new Date('2026-05-01');
+
+const DAYS_JP = ['日','月','火','水','木','金','土'];
+const DAYS_EN = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+// Phase detection
+function getPhase(date) {
+  const d = new Date(date);
+  if (d < new Date('2026-06-15')) return 1;
+  if (d <= DRESS_DATE) return 2;
+  return 3;
+}
+
+// Week schedule: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+// 木曜ジム休み→隔週。水木入れ替え: Wed=下半身A, Thu(open)=有酸素プール
+// Schedule: Mon=上半身A, Tue=下半身A, Wed=有酸素プール, Thu=上半身B(ジム開いてる週のみ), Fri=体幹, Sat=全身, Sun=休み
+// 隔週木曜ジム休み→木曜は家でストレッチorランニングマシンに
+
+const SCHEDULE = {
+  1: { // Monday
+    theme: '上半身A', sub: 'デコルテ・鎖骨・肩', type: 'gym',
+    warmup: [
+      { name: 'ランニングマシン 速歩 or 軽ジョグ', target: '全身循環・関節ほぐし', sets: '10分', weight: '' }
+    ],
+    main: [
+      { name: 'インクラインダンベルプレス', target: '大胸筋上部 → デコルテのふっくら感', sets: '3×12回', weight: '4〜6kg' },
+      { name: 'サイドレイズ', target: '三角筋中部 → 肩の丸みで鎖骨を際立たせる', sets: '3×15回', weight: '2〜3kg' },
+      { name: 'フロントレイズ', target: '三角筋前部 → デコルテラインを整える', sets: '3×12回', weight: '2〜3kg' },
+      { name: 'フェイスプル（チューブ or マシン）', target: '僧帽筋下部 → 肩を下げて鎖骨ラインを長く', sets: '3×15回', weight: '10〜15kg' },
+      { name: 'ダンベルフライ（フラット）', target: '大胸筋全体 → バストの形を整える', sets: '3×12回', weight: '3〜5kg' },
+    ],
+    finish: [
+      { name: '壁チェストオープン・肩ストレッチ', target: '猫背防止 → 鎖骨を常に美しく', sets: '各30秒×2', weight: '' }
+    ],
+    sauna: true,
+    food_note: 'phase1'
+  },
+  2: { // Tuesday
+    theme: '下半身A', sub: 'お尻・内もも・ビーナスライン', type: 'gym',
+    warmup: [
+      { name: 'ランニングマシン 速歩', target: '関節ほぐし・血流UP', sets: '10分', weight: '' }
+    ],
+    main: [
+      { name: 'ヒップスラスト（バーベル or ダンベル）', target: '大臀筋 → お尻を高く丸くドレス映えする形に', sets: '4×12回', weight: '20〜40kg' },
+      { name: 'ブルガリアンスクワット', target: '大臀筋・ハムスト → 脚のラインを美しく', sets: '3×10回', weight: '各6〜10kg' },
+      { name: 'ワイドスクワット（スモウ）', target: '内転筋 → 太もも内側のたるみを引き締め', sets: '3×15回', weight: '8〜15kg' },
+      { name: 'アダクション（マシン）', target: '内転筋専門 → 内ももの隙間を作る', sets: '3×20回', weight: '20〜30kg' },
+      { name: 'ルーマニアンデッドリフト（軽め）', target: 'ハムスト → 脚裏を鍛えて脚全体を細長く', sets: '3×12回', weight: '8〜12kg' },
+      { name: 'カーフレイズ', target: 'ふくらはぎ → 脚のラインを整える', sets: '3×20回', weight: '体重のみ or 軽め' },
+    ],
+    finish: [
+      { name: 'ハムスト・臀部ストレッチ', target: '回復促進・柔軟性UP', sets: '各30秒×2', weight: '' }
+    ],
+    sauna: false,
+    food_note: 'phase1'
+  },
+  3: { // Wednesday → 有酸素プール日（水木入れ替え）
+    theme: '有酸素・プール', sub: 'クロール or 平泳ぎ＋サウナルーティン', type: 'pool',
+    warmup: [],
+    main: [
+      { name: 'プール クロール or 平泳ぎ', target: '全身有酸素 → 脂肪燃焼・デコルテ・背中を美しく使う', sets: '30〜40分', weight: '' },
+      { name: 'サウナ（8〜10分→水風呂→休憩）×3セット', target: '代謝UP・むくみ取り・回復促進', sets: '3セット', weight: '' },
+      { name: '温泉につかる', target: '血流促進・筋肉回復', sets: '15分', weight: '' },
+    ],
+    finish: [],
+    sauna: false,
+    food_note: 'phase1'
+  },
+  4: { // Thursday → 上半身B（隔週ジム休みに注意）
+    theme: '上半身B', sub: '背中・二の腕・後ろ姿（ジム開いてる週のみ）', type: 'gym_alt',
+    warmup: [
+      { name: 'ランニングマシン or 家ランニング 速歩', target: '全身循環', sets: '10〜15分', weight: '' }
+    ],
+    main: [
+      { name: 'ラットプルダウン', target: '広背筋 → 背中Vラインでくびれを際立たせる', sets: '3×12回', weight: '20〜35kg' },
+      { name: 'シーテッドロウ', target: '背中全体 → 美しい後ろ姿・猫背解消', sets: '3×12回', weight: '20〜30kg' },
+      { name: 'ダンベルローイング', target: '僧帽筋中部 → 姿勢改善', sets: '3×12回', weight: '5〜8kg' },
+      { name: 'トライセプスプッシュダウン', target: '上腕三頭筋 → 二の腕の引き締め', sets: '3×15回', weight: '10〜15kg' },
+      { name: 'ダンベルキックバック', target: '上腕三頭筋長頭 → 二の腕のたるみを取る', sets: '3×15回', weight: '2〜4kg' },
+    ],
+    finish: [
+      { name: '背中・肩甲骨ストレッチ', target: '回復・姿勢改善', sets: '各30秒×2', weight: '' }
+    ],
+    alt_note: '🔴 ジム休みの木曜は：ランニングマシン30分＋自宅ヨガ・ピラティス30分',
+    sauna: false,
+    food_note: 'phase1'
+  },
+  5: { // Friday
+    theme: '体幹・くびれ', sub: 'ビーナスライン・砂時計シルエットの核心', type: 'gym',
+    warmup: [
+      { name: 'ランニングマシン 速歩', target: '体温UP', sets: '10分', weight: '' }
+    ],
+    main: [
+      { name: 'ドローイン（腹横筋の収縮）', target: '腹横筋 → お腹を内側から引き締める基礎', sets: '5回×10秒', weight: '体重のみ' },
+      { name: 'プランク', target: '体幹全体 → 姿勢維持・お腹の引き締め', sets: '3×40〜60秒', weight: '体重のみ' },
+      { name: 'サイドプランク', target: '腹斜筋 → くびれの横ラインを作る', sets: '3×30秒 左右', weight: '体重のみ' },
+      { name: 'ロシアンツイスト', target: '腹斜筋 → ウエストを削るように引き締める', sets: '3×20回', weight: '2〜4kg' },
+      { name: 'レッグレイズ', target: '腹直筋下部 → 下腹部のたるみを取る', sets: '3×15回', weight: '体重のみ' },
+      { name: 'バイシクルクランチ', target: '腹斜筋+腹直筋 → くびれと下腹を同時に', sets: '3×20回', weight: '体重のみ' },
+    ],
+    finish: [],
+    sauna: true,
+    food_note: 'phase1'
+  },
+  6: { // Saturday
+    theme: '全身サーキット', sub: '脂肪燃焼・総仕上げ', type: 'gym',
+    warmup: [
+      { name: 'ランニングマシン ジョグ', target: '心拍数を上げる', sets: '10分', weight: '' }
+    ],
+    main: [
+      { name: 'ケトルベルスイング（or ダンベル）', target: '全身・臀部・心肺 → 脂肪燃焼と引き締めを同時に', sets: '4×15回', weight: '8〜16kg' },
+      { name: 'スクワット→プレス（ダンベル）', target: '脚・肩の複合 → 代謝を最大化', sets: '3×12回', weight: '各4〜6kg' },
+      { name: 'バーピー（低強度）', target: '全身有酸素 → 仕上げの脂肪燃焼', sets: '3×10回', weight: '' },
+      { name: 'プランクからマウンテンクライマー', target: '体幹・脂肪燃焼', sets: '3×20回', weight: '' },
+    ],
+    finish: [
+      { name: '全身ストレッチ', target: '回復・リラックス', sets: '10分', weight: '' }
+    ],
+    sauna: true,
+    food_note: 'phase1'
+  },
+  0: { // Sunday
+    theme: '回復日', sub: 'カラダを休める', type: 'rest',
+    warmup: [], main: [], finish: [],
+    sauna: false,
+    food_note: 'rest'
+  }
+};
+
+const FOOD = {
+  phase1: [
+    { time: '朝食', items: '卵2個 / オートミール or 玄米 / 無糖ヨーグルト / バナナ / ブラックコーヒー' },
+    { time: '昼食', items: '鶏むね肉 or 魚 150g / 玄米半膳 / 蒸し野菜 / 納豆 / 味噌汁（具だくさん）' },
+    { time: '運動前', items: 'バナナ1本 or おにぎり1個（30〜60分前）/ 水分をしっかり' },
+    { time: '運動後', items: 'プロテイン 20〜25g or ゆで卵2個＋ヨーグルト（30分以内）' },
+    { time: '夕食', items: '魚（サバ・鮭）or 鶏もも / 炭水化物少なめ / 野菜スープ / 豆腐 ※21時以降NG' },
+  ],
+  phase2: [
+    { time: '朝食', items: '卵2個 / オートミール（少量）/ 無糖ヨーグルト / キウイ' },
+    { time: '昼食', items: '鶏むね肉 or 白身魚 150g / 野菜たっぷり / 炭水化物やや少なめ' },
+    { time: '運動前', items: 'バナナ半本 or 小さいおにぎり1個' },
+    { time: '運動後', items: 'プロテイン 20g（むくみ注意で塩分の少ないものを選ぶ）' },
+    { time: '夕食', items: '魚 or 鶏むね / 野菜スープ（減塩）/ 炭水化物ほぼなし ※20時以降NG' },
+  ],
+  rest: [
+    { time: '朝食', items: '卵2個 / 玄米 or もち麦 / ヨーグルト / フルーツ' },
+    { time: '昼食', items: '鶏むね or 魚 / 野菜炒め / 玄米 or もち麦' },
+    { time: '夕食', items: '豆腐・野菜中心 / 軽め / 早めに食べる' },
+  ]
+};
+
+// ===================== STATE =====================
+let checkedDays = JSON.parse(localStorage.getItem('wbt_checked') || '{}');
+let customEvents = JSON.parse(localStorage.getItem('wbt_events') || '[]');
+let trackerMonth = new Date();
+
+// ===================== UTILS =====================
+function daysUntil(target) {
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const t = new Date(target);
+  t.setHours(0,0,0,0);
+  return Math.ceil((t - now) / 86400000);
+}
+function formatDate(d) {
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateKey(d) {
+  return formatDate(d);
+}
+function today() { return new Date(); }
+
+// ===================== PAGES =====================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'today') renderToday();
+  if (name === 'tracker') renderTracker();
+  if (name === 'events') renderEvents();
+  if (name === 'menu') renderMenu();
+}
+
+// ===================== TODAY =====================
+function renderToday() {
+  const now = today();
+  const dow = now.getDay();
+  const phase = getPhase(now);
+  const sched = SCHEDULE[dow];
+  const key = dateKey(now);
+  const isDone = !!checkedDays[key];
+  const dressDays = daysUntil(DRESS_DATE);
+  const weddingDays = daysUntil(WEDDING_DATE);
+
+  let html = `
+    <div class="hero-section">
+      <div class="hero-date">${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${DAYS_JP[dow]}）</div>
+      <h1 class="hero-title">今日も<em>理想の自分</em>へ<br>一歩近づく日</h1>
+      <div class="countdown-row">
+        <div class="cd-card">
+          <div class="cd-days">${dressDays}</div>
+          <div class="cd-label">DAYS TO FITTING</div>
+          <div class="cd-date">👗 2026.7.19 ドレス試着</div>
+        </div>
+        <div class="cd-card">
+          <div class="cd-days">${weddingDays}</div>
+          <div class="cd-label">DAYS TO WEDDING</div>
+          <div class="cd-date">💍 2027.1.24 結婚式</div>
+        </div>
+      </div>
+    </div>
+    <div class="phase-chip">Phase ${phase} ${phase===1?'— 脂肪燃焼・土台作り':phase===2?'— 仕上げ・くびれ強調':'— 維持・完成'}</div>
+  `;
+
+  if (sched.type === 'rest') {
+    html += `
+      <div class="rest-card">
+        <div class="rest-icon">🌿</div>
+        <div class="rest-title">今日は回復日</div>
+        <div class="rest-desc">筋肉が育つのは休んでいる間です。<br>ヨガマットで軽いストレッチ or 散歩でリフレッシュを。<br>しっかり食べて、7時間以上睡眠をとりましょう。</div>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="today-card">
+        <div class="today-header">
+          <div class="today-day">${DAYS_EN[dow]}</div>
+          <div class="today-theme">${sched.theme}</div>
+          <div class="today-sub">${sched.sub}</div>
+          ${sched.alt_note ? `<div style="margin-top:10px; background:#fce8e0; border-radius:8px; padding:8px 12px; font-size:12px; color:var(--rose);">${sched.alt_note}</div>` : ''}
+        </div>
+        <div class="today-body">
+    `;
+
+    if (sched.warmup.length > 0) {
+      html += `<div class="ex-section-title">WARM UP</div>`;
+      sched.warmup.forEach(e => {
+        html += `<div class="ex-row"><div><div class="ex-name">${e.name}</div><div class="ex-target">${e.target}</div>${e.weight?`<div class="ex-weight">🏋️ ${e.weight}</div>`:''}</div><div class="ex-sets">${e.sets.replace(/×/,'<small>×</small>').replace(/分/,'<small>分</small>')}</div></div>`;
+      });
+    }
+
+    if (sched.main.length > 0) {
+      html += `<div class="ex-section-title">MAIN</div>`;
+      sched.main.forEach(e => {
+        html += `<div class="ex-row"><div><div class="ex-name">${e.name}</div><div class="ex-target">${e.target}</div>${e.weight?`<div class="ex-weight">🏋️ ${e.weight}</div>`:''}</div><div class="ex-sets">${e.sets}</div></div>`;
+      });
+    }
+
+    if (sched.finish.length > 0) {
+      html += `<div class="ex-section-title">FINISH</div>`;
+      sched.finish.forEach(e => {
+        html += `<div class="ex-row"><div><div class="ex-name">${e.name}</div><div class="ex-target">${e.target}</div></div><div class="ex-sets">${e.sets}</div></div>`;
+      });
+    }
+
+    html += `
+          <button class="check-btn ${isDone?'done':''}" onclick="toggleCheck('${key}')">
+            ${isDone ? '✓ 今日のメニュー完了！' : '今日のメニューを完了にする'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Sauna tip for pool day or sauna days
+  if (sched.type === 'pool') {
+    html += `
+      <div class="sauna-card">
+        <div class="sauna-title">🏊 今日のプール＆サウナルーティン</div>
+        <div class="sauna-steps">
+          <div class="sauna-step"><div class="icon">🏊</div><div class="label">水泳 30〜40分</div><div class="desc">クロール or 平泳ぎ</div></div>
+          <div class="sauna-step"><div class="icon">🌡️</div><div class="label">サウナ 3セット</div><div class="desc">8〜10分→水風呂→休憩</div></div>
+          <div class="sauna-step"><div class="icon">♨️</div><div class="label">温泉 15分</div><div class="desc">仕上げ・回復促進</div></div>
+        </div>
+      </div>
+    `;
+  } else if (sched.sauna) {
+    html += `
+      <div class="sauna-card">
+        <div class="sauna-title">🌡️ 今日はサウナOKデー</div>
+        <div class="sauna-steps">
+          <div class="sauna-step"><div class="icon">💪</div><div class="label">筋トレ後</div><div class="desc">30〜60分休憩してから</div></div>
+          <div class="sauna-step"><div class="icon">🌡️</div><div class="label">サウナ 2〜3セット</div><div class="desc">8分→水風呂→休憩</div></div>
+          <div class="sauna-step"><div class="icon">♨️</div><div class="label">温泉 15分</div><div class="desc">仕上げ</div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Food
+  const foodPhase = phase === 2 ? 'phase2' : sched.food_note;
+  const food = FOOD[foodPhase] || FOOD['phase1'];
+  html += `
+    <div class="food-card">
+      <div class="food-title">🥗 今日の食事プラン</div>
+      ${food.map(f => `
+        <div class="meal-row">
+          <div class="meal-time-badge">${f.time}</div>
+          <div class="meal-content">${f.items}</div>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px; padding:10px 12px; background:var(--cream); border-radius:8px; font-size:12px; color:var(--muted);">
+        💧 水を1日2L忘れずに &nbsp;｜&nbsp; 21時以降は食べない &nbsp;｜&nbsp; 塩分は控えめに
+      </div>
+    </div>
+  `;
+
+  // Custom events countdown
+  const allEvents = [
+    { name: 'ドレス試着', date: DRESS_DATE, type: 'fitting' },
+    { name: '結婚式', date: WEDDING_DATE, type: 'wedding' },
+    ...customEvents.map(e => ({ name: e.name, date: new Date(e.date), type: 'custom' }))
+  ].filter(e => daysUntil(e.date) >= 0).sort((a,b) => a.date - b.date);
+
+  if (allEvents.length > 0) {
+    const next = allEvents[0];
+    const d = daysUntil(next.date);
+    html += `
+      <div class="section-card" style="background:linear-gradient(135deg,var(--deep),#5a3a30); color:var(--cream);">
+        <div style="font-size:10px; letter-spacing:3px; color:var(--blush); margin-bottom:6px;">NEXT EVENT</div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:22px; margin-bottom:4px;">${next.name}</div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:48px; color:var(--blush); line-height:1;">${d}</div>
+        <div style="font-size:12px; opacity:0.7; margin-top:4px;">日後 ／ ${formatDate(next.date)}</div>
+      </div>
+    `;
+  }
+
+  document.getElementById('page-today').innerHTML = html;
+}
+
+function toggleCheck(key) {
+  if (checkedDays[key]) {
+    delete checkedDays[key];
+  } else {
+    checkedDays[key] = true;
+  }
+  localStorage.setItem('wbt_checked', JSON.stringify(checkedDays));
+  renderToday();
+}
+
+// ===================== TRACKER =====================
+function renderTracker() {
+  const now = today();
+  const year = trackerMonth.getFullYear();
+  const month = trackerMonth.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  // Stats for this month
+  let doneCount = 0, totalDays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dd = new Date(year, month, d);
+    if (dd > now) break;
+    const dow = dd.getDay();
+    if (dow !== 0) totalDays++;
+    const key = dateKey(dd);
+    if (checkedDays[key]) doneCount++;
+  }
+
+  const pct = totalDays > 0 ? Math.round(doneCount/totalDays*100) : 0;
+
+  let html = `
+    <div class="month-nav">
+      <button class="month-arrow" onclick="changeMonth(-1)">‹</button>
+      <div class="month-title">${year}年 ${month+1}月</div>
+      <button class="month-arrow" onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">${doneCount}</div>
+        <div class="stat-label">完了日数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">${totalDays}</div>
+        <div class="stat-label">トレ日数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">${pct}<small style="font-size:16px">%</small></div>
+        <div class="stat-label">達成率</div>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span style="font-size:13px; font-weight:500;">今月の達成率</span>
+        <span style="font-size:13px; color:var(--rose); font-weight:700;">${pct}%</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="cal-grid">
+      ${DAYS_JP.map(d => `<div class="cal-head">${d}</div>`).join('')}
+  `;
+
+  // Empty cells before
+  for (let i = 0; i < firstDay; i++) {
+    const prevDate = new Date(year, month, -firstDay + i + 1);
+    html += `<div class="cal-cell other-month">${prevDate.getDate()}</div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dd = new Date(year, month, d);
+    const dow = dd.getDay();
+    const key = dateKey(dd);
+    const isToday = dateKey(dd) === dateKey(now);
+    const isDone = !!checkedDays[key];
+    const isRest = dow === 0;
+    const isFuture = dd > now;
+
+    let cls = 'cal-cell';
+    if (isToday) cls += ' today-cell';
+    if (isDone) cls += ' done-cell';
+    if (isRest && !isDone) cls += ' rest-cell';
+
+    let inner = d;
+    if (isDone) inner = `<span style="font-size:16px">✓</span>`;
+    else if (isRest) inner = `${d}<br><span style="font-size:8px">REST</span>`;
+
+    html += `<div class="${cls}" onclick="${!isFuture ? `toggleCalCheck('${key}')`:''}" style="${isFuture?'opacity:0.3;cursor:default;':''}">${inner}</div>`;
+  }
+
+  // Fill rest of grid
+  const totalCells = firstDay + daysInMonth;
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remaining; i++) {
+    html += `<div class="cal-cell other-month">${i}</div>`;
+  }
+
+  html += `</div>`;
+
+  // Legend
+  html += `
+    <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;border-radius:4px;background:var(--rose);"></div>完了</div>
+      <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;border-radius:4px;background:var(--light-sage);"></div>休養日</div>
+      <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;border-radius:4px;border:1.5px solid var(--rose);"></div>今日</div>
+    </div>
+    <div style="font-size:12px; color:var(--muted); text-align:center; padding:8px;">過去の日付をタップして完了/未完了を切り替えられます</div>
+  `;
+
+  document.getElementById('page-tracker').innerHTML = html;
+}
+
+function changeMonth(dir) {
+  trackerMonth = new Date(trackerMonth.getFullYear(), trackerMonth.getMonth() + dir, 1);
+  renderTracker();
+}
+
+function toggleCalCheck(key) {
+  if (checkedDays[key]) delete checkedDays[key];
+  else checkedDays[key] = true;
+  localStorage.setItem('wbt_checked', JSON.stringify(checkedDays));
+  renderTracker();
+}
+
+// ===================== EVENTS =====================
+function renderEvents() {
+  const fixed = [
+    { name: 'ドレス試着（第1回）', date: '2026-07-19', type: 'fitting', fixed: true },
+    { name: '結婚式', date: '2027-01-24', type: 'wedding', fixed: true },
+  ];
+  const all = [
+    ...fixed,
+    ...customEvents
+  ].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  let html = `
+    <div style="font-family:'Cormorant Garamond',serif; font-size:28px; margin-bottom:6px;">予定管理</div>
+    <div style="font-size:13px; color:var(--muted); margin-bottom:24px;">試着・重要イベントのカウントダウン</div>
+    <div class="events-list">
+  `;
+
+  all.forEach((ev, i) => {
+    const d = daysUntil(new Date(ev.date));
+    const past = d < 0;
+    html += `
+      <div class="event-item" style="${past?'opacity:0.45':''}">
+        <div class="event-dot ${ev.type==='wedding'?'wedding':''}"></div>
+        <div class="event-info">
+          <div class="event-name">${ev.name}</div>
+          <div class="event-date">${ev.date.replace(/-/g,'.')}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="event-countdown">${past ? '終了' : d}</div>
+          <small style="font-size:11px; color:var(--muted);">${past ? '' : '日後'}</small>
+        </div>
+        ${!ev.fixed ? `<button class="event-delete" onclick="deleteEvent(${i - fixed.length})">×</button>` : ''}
+      </div>
+    `;
+  });
+
+  html += `</div>
+    <div class="add-event-form">
+      <div class="add-event-title">＋ 予定を追加</div>
+      <div class="form-row">
+        <label class="form-label">イベント名</label>
+        <input class="form-input" id="ev-name" placeholder="例：2回目のドレス試着">
+      </div>
+      <div class="form-row">
+        <label class="form-label">日付</label>
+        <input class="form-input" id="ev-date" type="date">
+      </div>
+      <button class="add-btn" onclick="addEvent()">追加する</button>
+    </div>
+  `;
+
+  document.getElementById('page-events').innerHTML = html;
+}
+
+function addEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  const date = document.getElementById('ev-date').value;
+  if (!name || !date) { alert('名前と日付を入力してください'); return; }
+  customEvents.push({ name, date, type: 'custom', fixed: false });
+  localStorage.setItem('wbt_events', JSON.stringify(customEvents));
+  renderEvents();
+}
+
+function deleteEvent(idx) {
+  if (!confirm('この予定を削除しますか？')) return;
+  customEvents.splice(idx, 1);
+  localStorage.setItem('wbt_events', JSON.stringify(customEvents));
+  renderEvents();
+}
+
+// ===================== MENU PAGE =====================
+function renderMenu() {
+  const days = [
+    { dow: 1, label: 'MON 月曜' },
+    { dow: 2, label: 'TUE 火曜' },
+    { dow: 3, label: 'WED 水曜' },
+    { dow: 4, label: 'THU 木曜' },
+    { dow: 5, label: 'FRI 金曜' },
+    { dow: 6, label: 'SAT 土曜' },
+    { dow: 0, label: 'SUN 日曜' },
+  ];
+
+  let html = `
+    <div style="font-family:'Cormorant Garamond',serif; font-size:28px; margin-bottom:6px;">週間メニュー全体</div>
+    <div style="font-size:13px; color:var(--muted); margin-bottom:24px;">重量・セット数を含む完全版</div>
+  `;
+
+  days.forEach(({ dow, label }) => {
+    const s = SCHEDULE[dow];
+    if (s.type === 'rest') {
+      html += `
+        <div class="section-card">
+          <div style="font-size:10px; letter-spacing:2px; color:var(--gold); margin-bottom:6px;">${label}</div>
+          <div class="section-card-title">🌿 ${s.theme}</div>
+          <div style="font-size:13px; color:var(--muted);">ストレッチ・散歩・ヨガ。しっかり回復させる日。</div>
+        </div>
+      `;
+      return;
+    }
+    html += `
+      <div class="section-card">
+        <div style="font-size:10px; letter-spacing:2px; color:var(--gold); margin-bottom:4px;">${label}</div>
+        <div class="section-card-title">${s.theme}</div>
+        <div style="font-size:12px; color:var(--muted); margin-bottom:14px;">${s.sub}</div>
+        ${s.alt_note ? `<div style="background:#fce8e0; border-radius:8px; padding:8px 12px; font-size:12px; color:var(--rose); margin-bottom:12px;">${s.alt_note}</div>` : ''}
+    `;
+
+    const allEx = [
+      ...s.warmup.map(e => ({ ...e, section: 'WARM UP' })),
+      ...s.main.map(e => ({ ...e, section: 'MAIN' })),
+      ...s.finish.map(e => ({ ...e, section: 'FINISH' })),
+    ];
+
+    let lastSection = '';
+    allEx.forEach(e => {
+      if (e.section !== lastSection) {
+        html += `<div class="ex-section-title">${e.section}</div>`;
+        lastSection = e.section;
+      }
+      html += `
+        <div class="ex-row">
+          <div>
+            <div class="ex-name">${e.name}</div>
+            <div class="ex-target">${e.target}</div>
+            ${e.weight ? `<div class="ex-weight">🏋️ 目安重量：${e.weight}</div>` : ''}
+          </div>
+          <div class="ex-sets">${e.sets}</div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+  });
+
+  // Phase changes note
+  html += `
+    <div class="section-card" style="background:linear-gradient(135deg,#fce8e0,#faf6f1); border:1px solid var(--blush);">
+      <div class="section-card-title">⚠️ フェーズ別の調整ポイント</div>
+      <div style="font-size:13px; color:#6a5048; line-height:2;">
+        <strong>Phase 1（5〜6月中旬）</strong>：今のメニューそのまま。重量を少しずつ慣れさせながら上げていく。<br>
+        <strong>Phase 2（6月中旬〜7/19）</strong>：重量を少し下げ、回数を15〜20回に増やす。塩分↓。サウナ頻度↑。<br>
+        <strong>Phase 3（7/20〜）</strong>：週5日ペースに落として維持。試着結果で部位を微調整。<br>
+        <strong>試着2週間前</strong>：塩分・アルコールをほぼゼロに。サウナ毎日でむくみ最大限取る。
+      </div>
+    </div>
+  `;
+
+  document.getElementById('page-menu').innerHTML = html;
+}
+
+// ===================== INIT =====================
+renderToday();
+</script>
+</body>
+</html>
